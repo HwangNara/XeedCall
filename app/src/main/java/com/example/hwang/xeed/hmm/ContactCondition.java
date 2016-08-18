@@ -1,65 +1,33 @@
-package com.example.hwang.xeed;
+package com.example.hwang.xeed.hmm;
 
-import android.app.ProgressDialog;
+import android.app.Activity;
 import android.content.ContentResolver;
-import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Bundle;
 import android.provider.ContactsContract;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
 
-public class MainActivity extends android.app.Activity {
+import cooker.core.annotations.CookerCondition;
+import cooker.core.annotations.CookerSerializable;
+import cooker.core.annotations.CookingIngredient;
 
-    Button submitBtn = null;
-    EditText nameText = null;
-    private ProgressDialog pDialog;
+/**
+ * Created by Hwang on 2016-08-18.
+ */
+@CookingIngredient
+public class ContactCondition {
+
+    @CookerSerializable(key = "number")
+    String phoneNumber;
+    @CookerSerializable(key = "paramName")
+    String paramName;
+    @CookerSerializable(key = "activity")
+    Activity activity;
+
     Cursor cursor;
     int counter;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        nameText = (EditText) findViewById(R.id.nameText);
-        submitBtn = (Button) findViewById(R.id.call);
-    }
-
-
-    public void onButtonClicked(View v) {
-        String name = nameText.getText().toString();
-        findNumberByName(name);
-    }
-
-    private void findNumberByName(final String name) {
-        pDialog = new ProgressDialog(this);
-        pDialog.setMessage("Finding " + name + "...");
-        pDialog.setCancelable(false);
-        pDialog.show();
-
-        // Since reading contacts takes more time, let's run it on a separate thread.
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String phone = getContacts(name);
-
-                pDialog.cancel();
-                if (phone == null) {
-                    Toast.makeText(getApplicationContext(), "sss", Toast.LENGTH_SHORT).show();
-                } else {
-                    Intent myIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("tel:" + phone));
-                    startActivity(myIntent);
-                }
-            }
-        }).start();
-    }
-
-    public String getContacts(String paramName) {
+    @CookerCondition
+    public boolean getContacts() {
 
         String phoneNumber = null;
         Uri CONTENT_URI = ContactsContract.Contacts.CONTENT_URI;
@@ -69,7 +37,7 @@ public class MainActivity extends android.app.Activity {
         Uri PhoneCONTENT_URI = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
         String Phone_CONTACT_ID = ContactsContract.CommonDataKinds.Phone.CONTACT_ID;
         String NUMBER = ContactsContract.CommonDataKinds.Phone.NUMBER;
-        ContentResolver contentResolver = getContentResolver();
+        ContentResolver contentResolver = activity.getContentResolver();
         cursor = contentResolver.query(CONTENT_URI, null,null, null, null);
 
         // Iterate every contact in the phone
@@ -87,17 +55,19 @@ public class MainActivity extends android.app.Activity {
                         phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER));
 
                         if (isMatchUserName(name, paramName)) {
-                            return phoneNumber;
+                            this.phoneNumber = phoneNumber;
+                            return true;
                         }
                     }
                     phoneCursor.close();
                 }
             }
         }
-        return null;
+        return false;
     }
 
     private boolean isMatchUserName(String name, String paramName) {
         return name.toLowerCase().indexOf(paramName.toLowerCase()) >= 0 ? true : false;
     }
+
 }
